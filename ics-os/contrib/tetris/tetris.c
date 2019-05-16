@@ -26,6 +26,7 @@ int dequeue();
 bool stopPiece();
 void changePiece();
 void rowsClear();
+bool check_collision(int x);
 
 /**************************************
  *	PIECES 							  *
@@ -43,7 +44,7 @@ void rowsClear();
  **************************************/
 
 
-int game, speed, playerPiece, previous_piece, pieceOrientation, previous_orientation, playerX, playerY, previous_x, previous_y, queueHead, queueTail, *pieceQueue, **board, padding;
+int game, speed, playerPiece, previous_piece, pieceOrientation, previous_orientation, playerX, playerY, previous_x, previous_y, queueHead, queueTail, *pieceQueue, **board, padding, score;
 
 int main(){
 	init();
@@ -62,6 +63,7 @@ void init(){
 	set_graphics(VGA_320X200X256);
 
 	game = 0;
+	score = 0;
 	speed = 25;
 	padding = box_size * (board_width + 2) + 20;
 	queueHead = 0;
@@ -78,7 +80,7 @@ void init(){
 	//	initializes the queue with random pieces
 	for(i = 0; i < queue_size; i++){
 		//	fills the array with an integer from 1 to 7
-		pieceQueue[i] = 4;
+		pieceQueue[i] = rand() % 7 + 1;
 	}
 
 	//	allocates memory for the game board
@@ -110,6 +112,10 @@ void start(){
 			playerY = 0;
 			speed = 25;
 		}
+		if(board[playerY][playerX] == occupied){
+			game = over;
+			break;
+		}
 
 		//	reads command
 		if(kb_ready()){
@@ -121,11 +127,14 @@ void start(){
 					break;
 				case 'a':
 				//	need to check colisions from the left
-					playerX--;
+					if(check_collision(1) == false){
+						playerX--;
+					}
 					break;
 				case 'd':
-				//	check from the right
-					playerX++;
+					if(check_collision(2) == false){
+						playerX++;
+					}
 					break;
 				case 's':
 					speed = 7;
@@ -186,6 +195,10 @@ void renderScreen(bool init){
 		//	renders the side ui
 		write_text("NEXT", padding, 10, WHITE, 0);
 		renderQueue();
+		write_text("SCORE: ", padding, 30, MAGENTA, 0);
+		char score_text[4];
+		sprintf(score_text, "%d", score);
+		write_text(score_text, padding + 55, 30, MAGENTA, 0);
 
 		return;
 	}
@@ -250,6 +263,129 @@ void renderScreen(bool init){
 							(previous_y + 1) * box_size,
 							(previous_y + 3) * box_size
 						);
+				}
+				break;
+			case 3:
+				switch(previous_orientation){
+					case 0:
+						erase_block(
+							(previous_x + 1) * box_size, (previous_x + 3) * box_size,
+							previous_y * box_size < box_size? box_size : previous_y * box_size,
+							(previous_y + 1) * box_size
+						);
+						erase_block(
+							previous_x * box_size, (previous_x + 2) * box_size,
+							(previous_y + 1) * box_size,
+							(previous_y + 2) * box_size
+						);
+						break;
+					case 1:
+						erase_block(
+							(previous_x + 1) * box_size, (previous_x + 2) * box_size,
+							previous_y * box_size < box_size? box_size : previous_y * box_size,
+							(previous_y + 2) * box_size
+						);
+						erase_block(
+							(previous_x + 2) * box_size, (previous_x + 3) * box_size,
+							(previous_y + 1) * box_size,
+							(previous_y + 3) * box_size
+						);
+						break;
+					case 2:
+						erase_block(
+							(previous_x + 1) * box_size, (previous_x + 3) * box_size,
+							(previous_y + 1) * box_size,
+							(previous_y + 2) * box_size
+						);
+						erase_block(
+							previous_x * box_size, (previous_x + 2) * box_size,
+							(previous_y + 2) * box_size,
+							(previous_y + 3) * box_size
+						);
+						break;
+					case 3:
+						erase_block(
+							previous_x * box_size, (previous_x + 1) * box_size,
+							previous_y * box_size < box_size? box_size : previous_y * box_size,
+							(previous_y + 2) * box_size
+						);
+						erase_block(
+							(previous_x + 1) * box_size, (previous_x + 2) * box_size,
+							(previous_y + 1) * box_size,
+							(previous_y + 3) * box_size
+						);
+				}
+				break;
+			case 4:
+				switch(previous_orientation){
+					case 0:
+						erase_block(previous_x * box_size, (previous_x + 4) * box_size, (previous_y + 1) * box_size, (previous_y + 2) * box_size);
+						break;
+					case 1:
+						erase_block((previous_x + 1) * box_size, (previous_x + 2) * box_size, previous_y * box_size, (previous_y + 4) * box_size);
+						break;
+					case 2:
+						erase_block((previous_x - 1) * box_size, (previous_x + 3) * box_size, (previous_y + 1) * box_size, (previous_y + 2) * box_size);
+						break;
+					case 3:
+						erase_block((previous_x + 1) * box_size, (previous_x + 2) * box_size, (previous_y - 1) * box_size, (previous_y + 3) * box_size);
+				}
+				break;
+			case 5:
+				switch(previous_orientation){
+					case 0:
+						erase_block(previous_x * box_size, (previous_x + 1) * box_size, previous_y * box_size < box_size? box_size : previous_y * box_size, (previous_y + 1) * box_size);
+						erase_block(previous_x * box_size, (previous_x + 3) * box_size, (previous_y + 1) * box_size, (previous_y + 2) * box_size);
+						break;
+					case 1:
+						erase_block((previous_x + 2) * box_size, (previous_x + 3) * box_size, previous_y * box_size < box_size? box_size : previous_y * box_size, (previous_y + 1) * box_size);
+						erase_block((previous_x + 1) * box_size, (previous_x + 2) * box_size, previous_y * box_size < box_size? box_size : previous_y * box_size, (previous_y + 3) * box_size);
+						break;
+					case 2:
+						erase_block((previous_x + 2) * box_size, (previous_x + 3) * box_size, (previous_y + 2) * box_size, (previous_y + 3) * box_size);
+						erase_block(previous_x * box_size, (previous_x + 3) * box_size, (previous_y + 1) * box_size, (previous_y + 2) * box_size);
+						break;
+					case 3:
+						erase_block(previous_x * box_size, (previous_x + 1) * box_size, (previous_y + 2) * box_size, (previous_y + 3) * box_size);
+						erase_block((previous_x + 1) * box_size, (previous_x + 2) * box_size, previous_y * box_size, (previous_y + 3) * box_size);
+				}
+				break;
+			case 6:
+				switch(previous_orientation){
+					case 0:
+						erase_block((previous_x + 2) * box_size, (previous_x + 3) * box_size, previous_y * box_size < box_size? box_size : previous_y * box_size, (previous_y + 1) * box_size);
+						erase_block(previous_x * box_size, (previous_x + 3) * box_size, (previous_y + 1) * box_size, (previous_y + 2) * box_size);
+						break;
+					case 1:
+						erase_block((previous_x + 2) * box_size, (previous_x + 3) * box_size, (previous_y + 2) * box_size, (previous_y + 3) * box_size);
+						erase_block((previous_x + 1) * box_size, (previous_x + 2) * box_size, previous_y * box_size < box_size? box_size : previous_y * box_size, (previous_y + 3) * box_size);
+						break;
+					case 2:
+						erase_block(previous_x * box_size, (previous_x + 1) * box_size, (previous_y + 2) * box_size, (previous_y + 3) * box_size);
+						erase_block(previous_x * box_size, (previous_x + 3) * box_size, (previous_y + 1) * box_size, (previous_y + 2) * box_size);
+						break;
+					case 3:
+						erase_block(previous_x * box_size, (previous_x + 1) * box_size, previous_y * box_size < box_size? box_size : previous_y * box_size, (previous_y + 1) * box_size);
+						erase_block((previous_x + 1) * box_size, (previous_x + 2) * box_size, previous_y * box_size < box_size? box_size : previous_y * box_size, (previous_y + 3) * box_size);
+				}
+				break;
+			case 7:
+				switch(previous_orientation){
+					case 0:
+						erase_block((previous_x + 1) * box_size, (previous_x + 2) * box_size, previous_y * box_size < box_size? box_size : previous_y * box_size, (previous_y + 1) * box_size);
+						erase_block(previous_x * box_size, (previous_x + 3) * box_size, (previous_y + 1) * box_size, (previous_y + 2) * box_size);
+						break;
+					case 1:
+						erase_block((previous_x + 2) * box_size, (previous_x + 3) * box_size, (previous_y + 1) * box_size, (previous_y + 2) * box_size);
+						erase_block((previous_x + 1) * box_size, (previous_x + 2) * box_size, previous_y * box_size < box_size? 0 : previous_y * box_size, (previous_y + 3) * box_size);
+						break;
+					case 2:
+						erase_block((previous_x + 1) * box_size, (previous_x + 2) * box_size, (previous_y + 2) * box_size, (previous_y + 3) * box_size);
+						erase_block(previous_x * box_size, (previous_x + 3) * box_size, (previous_y + 1) * box_size, (previous_y + 2) * box_size);
+						break;
+					case 3:
+						erase_block(previous_x * box_size, (previous_x + 1) * box_size, (previous_y + 1) * box_size, (previous_y + 2) * box_size);
+						erase_block((previous_x + 1) * box_size, (previous_x + 2) * box_size, previous_y * box_size, (previous_y + 3) * box_size);
 				}
 		}
 	}
@@ -375,52 +511,207 @@ void renderScreen(bool init){
 		case 4:
 			switch(pieceOrientation){
 				case 0:
-					for(y = playerY * box_size; y < (playerY + 1) * box_size; y++){
-						if(y < box_size){
-							continue;
-						}
-						for(x = (playerX + 1) * box_size; x < (playerX + 4) * box_size; x++){	
+					for(y = (playerY + 1) * box_size; y < (playerY + 2) * box_size; y++){
+						for(x = playerX * box_size; x < (playerX + 4) * box_size; x++){	
 							write_pixel(x, y, CYAN);
 						}
 					}
-				break;
+					break;
 				case 1:
-					for(y = (playerY + 1) * box_size; y < (playerY + 4) * box_size; y++){
+					for(y = playerY * box_size; y < (playerY + 4) * box_size; y++){
 						if(y < box_size){
 							continue;
 						}
-						for(x = playerX * box_size; x < (playerX + 1) * box_size; x++){	
+						for(x = (playerX + 1) * box_size; x < (playerX + 2) * box_size; x++){	
 							write_pixel(x, y, CYAN);
 						}
 					}
-				break;
+					break;
 				case 2:
-					for(y = playerY * box_size; y < (playerY + 1) * box_size; y++){
+					for(y = (playerY + 1) * box_size; y < (playerY + 2) * box_size; y++){
+						for(x = (playerX - 1) * box_size; x < (playerX + 3) * box_size; x++){	
+							write_pixel(x, y, CYAN);
+						}
+					}
+					break;
+				case 3:
+					for(y = (playerY - 1) * box_size; y < (playerY + 3) * box_size; y++){
 						if(y < box_size){
 							continue;
 						}
-						for(x = (playerX + 2) * box_size; x < (playerX + 4) * box_size; x++){	
+						for(x = (playerX + 1) * box_size; x < (playerX + 2) * box_size; x++){	
 							write_pixel(x, y, CYAN);
+						}
+					}
+			}	
+			break;
+		case 5:
+			switch(pieceOrientation){
+				case 0:
+					for(y = playerY * box_size; y < (playerY + 2) * box_size; y++){
+							if(y < box_size){
+								continue;
+							}
+							for(x = playerX * box_size; x < (playerX + 3) * box_size; x++){
+								if(y < (playerY + 1) * box_size && x >= (playerX + 1) * box_size) {
+									continue;
+								} 
+								write_pixel(x, y, BLUE);
+							}
+					}
+				break;
+				
+				case 1: 
+					for(y = playerY * box_size; y < (playerY + 3) * box_size; y++){
+						if(y < box_size){
+							continue;
+						}
+						for(x = (playerX + 1) * box_size; x < (playerX + 3) * box_size; x++){
+							if(y >= (playerY + 1) * box_size && x >= (playerX + 2) * box_size) {
+								continue;
+							} 
+							write_pixel(x, y, BLUE);
+						}
+					} 
+				break;
+
+				case 2:
+					for(y = (playerY + 1) * box_size; y < (playerY + 3) * box_size; y++){
+						for(x = playerX * box_size; x < (playerX + 3) * box_size; x++){
+							if(y >= (playerY + 2) * box_size && x < (playerX + 2) * box_size) {
+								continue;
+							} 
+							write_pixel(x, y, BLUE);
 						}
 					}
 				break;
-				case 3:
-					for(y = (playerY + 2) * box_size; y < (playerY + 4) * box_size; y++){
+
+				case 3: 
+					for(y = playerY * box_size; y < (playerY + 3) * box_size; y++){
 						if(y < box_size){
 							continue;
 						}
-						for(x = playerX * box_size; x < (playerX + 1) * box_size; x++){	
-							write_pixel(x, y, CYAN);
+						for(x = playerX * box_size; x < (playerX + 2) * box_size; x++){
+							if(y < (playerY + 2) * box_size && x < (playerX + 1) * box_size) {
+								continue;
+							} 
+							write_pixel(x, y, BLUE);
 						}
-					}
+					} 
 				break;
 			}
-			// break;
-		// case 5:
-			// break;
-		// case 6:
-			// break;
-		// case 7:
+			break;
+		case 6:
+			switch(pieceOrientation){
+				case 0:
+					for(y = playerY * box_size; y < (playerY + 2) * box_size; y++){
+						if(y < box_size){
+							continue;
+						}
+						for(x = playerX * box_size; x < (playerX + 3) * box_size; x++){
+							if(y < (playerY + 1) * box_size && x < (playerX + 2) * box_size){
+								continue;
+							}
+							write_pixel(x, y, BROWN);
+						}
+					}
+				break;
+
+				case 1:
+					for(y = playerY * box_size; y < (playerY + 3) * box_size; y++){
+						if(y < box_size){
+							continue;
+						}
+						for(x = (playerX + 1) * box_size; x < (playerX + 3) * box_size; x++){
+							if(y < (playerY + 2) * box_size && x >= (playerX + 2) * box_size){
+								continue;
+							}
+							write_pixel(x, y, BROWN);
+						}
+					}
+
+				break;
+
+				case 2:
+					for(y = (playerY + 1)* box_size; y < (playerY + 3) * box_size; y++){
+						for(x = playerX * box_size; x < (playerX + 3) * box_size; x++){
+							if(y >= (playerY + 2) * box_size && x >= (playerX + 1) * box_size){
+								continue;
+							}
+							write_pixel(x, y, BROWN);
+						}
+					}
+				break;
+
+				case 3:
+					for(y = playerY * box_size; y < (playerY + 3) * box_size; y++){
+						if(y < box_size){
+							continue;
+						}
+						for(x = playerX * box_size; x < (playerX + 2) * box_size; x++){
+							if(y >= (playerY + 1) * box_size && x < (playerX + 1) * box_size){
+								continue;
+							}
+							write_pixel(x, y, BROWN);
+						}
+					}
+
+				break;
+
+
+			}
+			break;
+		case 7:
+			switch(pieceOrientation){
+				case 0:
+					for(y = playerY * box_size; y < (playerY + 2) * box_size; y++){	
+						if(y < box_size){	
+							continue;
+						}
+						for(x = playerX * box_size; x < (playerX + 3) * box_size; x++){
+							if(y < (playerY + 1) * box_size && x < (playerX + 1) * box_size || y < (playerY + 1) * box_size && x >= (playerX + 2) * box_size){
+								continue;
+							}
+							write_pixel(x, y, MAGENTA);
+						}
+					}
+					break;
+				case 1:
+					for(y = playerY * box_size; y < (playerY + 3) * box_size; y++){
+						if(y < box_size){
+							continue;
+						}
+						for(x = (playerX + 1) * box_size; x < (playerX + 3) * box_size; x++){
+							if(y < (playerY + 1) * box_size && x >= (playerX + 2) * box_size || y >= (playerY + 2) * box_size && x >= (playerX + 2) * box_size){
+								continue;
+							}
+							write_pixel(x, y, MAGENTA);
+						}
+					}
+					break;
+				case 2:
+					for(y = (playerY + 1) * box_size; y < (playerY + 3) * box_size; y++){
+						for(x = playerX * box_size; x < (playerX + 3) * box_size; x++){
+							if(y >= (playerY + 2) * box_size && x < (playerX + 1) * box_size || y >= (playerY + 2) * box_size && x >= (playerX + 2) * box_size){
+								continue;
+							}
+							write_pixel(x, y, MAGENTA);
+						}
+					}
+					break;
+				case 3:
+					for(y = playerY * box_size; y < (playerY + 3) * box_size; y++){
+						if(y < box_size){
+							continue;
+						}
+						for(x = playerX * box_size; x < (playerX + 2) * box_size; x++){
+							if(x < (playerX + 1) * box_size && (y < (playerY + 1) * box_size || y >= (playerY + 2) * box_size)){
+								continue;
+							}
+							write_pixel(x, y, MAGENTA);
+						}
+					}
+			}
 	}
 	previous_x = playerX;
 	previous_y = playerY;
@@ -509,7 +800,7 @@ int dequeue(){
 	queueHead = queueHead + 1 == queue_size? 0 : queueHead + 1;
 
 	//	enqueues a new piece
-	pieceQueue[queueTail] = 4;
+	pieceQueue[queueTail] = rand() % 7 + 1;
 
 	// erases the queued pieces
 	erase_block(padding + 43, padding + 127, 10, 20);
@@ -975,7 +1266,7 @@ void changePiece(){
 		(playerPiece == 3 || playerPiece == 6) && pieceOrientation == 1
 	){
 		for(y = (playerY + 2) * box_size; y < (playerY + 3) * box_size; y++){
-			for(x = (playerX + 1) * box_size; x < (playerX + 2) * box_size; x++){
+			for(x = (playerX + 2) * box_size; x < (playerX + 3) * box_size; x++){
 				write_pixel(x, y, DARKGRAY);
 			}
 		}
@@ -1005,6 +1296,12 @@ void rowsClear(){
 
 		//	when a filled row is found
 		if(isClear == true){
+			score++;
+			erase_block(padding + 55, padding + 90, 30, 50);
+			char score_text[4];
+			sprintf(score_text, "%d", score);
+			write_text(score_text, padding + 55, 30, MAGENTA, 0);
+
 			//	from current row -> 2nd row from the top
 			for(i = y; i > 0; i--){
 				//	erases whole row
@@ -1019,7 +1316,7 @@ void rowsClear(){
 						//	recolors the cell to display it being occupied
 						for(j = (i + 1) * box_size; j < (i + 2) * box_size; j++){
 							for(k = (x + 1) * box_size; k < (x + 2) * box_size; k++){
-								write_pixel(j, k, DARKGRAY);
+								write_pixel(k, j, DARKGRAY);
 							}
 						}
 					}
@@ -1032,6 +1329,236 @@ void rowsClear(){
 			}
 		}
 	}
+}
+
+bool check_collision(int x){
+	if(x == 1){ //to the left
+		switch(playerPiece){
+			case 1:
+				if(playerX == 0){
+					return true;
+				}else{
+					return false;
+				}
+				break;
+				
+			case 2:
+				if(pieceOrientation == 1){
+					if(playerX == 0){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == 1){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+				
+			case 3:
+				if(pieceOrientation == 1){
+					if(playerX == 0){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == 1){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+				
+			case 4:
+				if(pieceOrientation == 1 || pieceOrientation == 3){
+					if(playerX == 0){
+						return true;
+					}else{
+						return false;
+					}
+				}else if(pieceOrientation == 0){
+					if(playerX == 1){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == 2){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+				
+			case 5:
+				if(pieceOrientation == 1){
+					if(playerX == 0){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == 1){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+				
+			case 6:
+				if(pieceOrientation == 1){
+					if(playerX == 0){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == 1){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+			
+			case 7:
+				if(pieceOrientation == 1){
+					if(playerX == 0){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == 1){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+		} 
+	
+	}else{ //to the right
+		switch(playerPiece){
+			case 1 :
+				if(playerX == board_width-2){
+					return true;
+				}else{
+					return false;
+				}
+				break;
+				
+			case 2 :
+				if(pieceOrientation == 3){
+					if(playerX == board_width-1){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == board_width-2){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+				
+			case 3 :
+				if(pieceOrientation == 3){
+					if(playerX == board_width-1){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == board_width-2){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+				
+			case 4 :
+				if(pieceOrientation == 1 || pieceOrientation == 3){
+					if(playerX == board_width-1){
+						return true;
+					}else{
+						return false;
+					}
+				}else if(pieceOrientation == 0){
+					if(playerX == board_width-3){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == board_width-2){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+				
+			case 5 :
+				if(pieceOrientation == 3){
+					if(playerX == board_width-1){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == board_width-2){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+				
+			case 6 :
+				if(pieceOrientation == 3){
+					if(playerX == board_width-1){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == board_width-2){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+			
+			case 7 :
+				if(pieceOrientation == 3){
+					if(playerX == board_width-1){
+						return true;
+					}else{
+						return false;
+					}
+				}else{
+					if(playerX == board_width-2){
+						return true;
+					}else{
+						return false;
+					}
+				}
+				break;
+		} 
+	}
+	return false;
 }
 
 /*
